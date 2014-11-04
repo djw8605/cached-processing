@@ -25,14 +25,17 @@ def parse_file(logfile, graph):
   # Example:
   # Got block of size 16384 bytes from [::ffff:10.137.11.4]:6884, peer_id = -LT1000-ktC_fZfzZadv
   block_finish_re = re.compile(".*Got block of size (\d+) bytes from (.*), peer_id = (.*)$")
-  block_finish_fallthrough = re.compile(".*Got block of size (\d+) bytes from.*, peer_id = .*$")
+  block_finish_fallthrough = re.compile(".*Got block of size (\d+) bytes from.*")
   
   # DaemonCore: command socket at <10.138.14.1:55477?noUDP>
   dest_address = re.compile(".*DaemonCore: command socket at \<([\d\.]+)\:.*>")
   # Started libtorrent on port: 6882
   dest_port = re.compile(".*Started libtorrent on port: ([\d]+)")
   
-  my_address = ""
+  # Peer Id: -LT1000-jwjcn9t(Wxgb
+  my_peer_id_re = re.compile("Peer Id: (.*)$")
+  
+  my_peer_id = ""
   
   f = open(logfile, 'r')
   for line in f:
@@ -44,34 +47,14 @@ def parse_file(logfile, graph):
       source_address = block_match.group(2)
       peer_id = block_match.group(3)
       
-      if source_address.startswith("127.0.0.1"):
-        source_address = source_address.replace("127.0.0.1", my_ip)
-      elif source_address.startswith("[::1]"):
-        source_address = source_address.replace("[::1]", my_ip)
-      elif source_address.startswith("[::ffff:"):
-        source_address = source_address.replace("[::ffff:", "")
-        source_address = source_address.replace("]", "")
-      
       if peer_id not in my_graph:
         my_graph[peer_id] = 0
       my_graph[peer_id] += int(block_size)
       continue
       
-    dest_address_match = dest_address.search(line)
-    if dest_address_match:
-      my_address = dest_address_match.group(1)
-      my_ip = my_address
-      continue
-      
-    dest_port_match = dest_port.search(line)
-    if dest_port_match:
-      my_address = "%s:%s" % (my_address, dest_port_match.group(1))
-      print "I'm listening on address %s" % my_address
-      if my_address not in graph:
-        graph[my_address] = {}
-        
-      my_graph = graph[my_address]
-      continue
+    my_peer_id_re_match = my_peer_id_re.search(line)
+    if my_peer_id_re_match:
+      my_peer_id = my_peer_id_re_match.group(1)
       
     block_finish_fallthrough_match = block_finish_fallthrough.search(line)
     if block_finish_fallthrough_match:
