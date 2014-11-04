@@ -5,8 +5,6 @@ import os
 import re
 from multiprocessing import Pool
 
-map_peerid_ipaddr = {}
-
 # From: https://stackoverflow.com/questions/1094841/reusable-library-to-get-human-readable-version-of-file-size
 def sizeof_fmt(num, suffix='B'):
     for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
@@ -42,6 +40,8 @@ def parse_file(logfile):
   
   my_peer_id = ""
   
+  map_peerid_ipaddr = {}
+  
   f = open(logfile, 'r')
   for line in f:
     
@@ -57,14 +57,14 @@ def parse_file(logfile):
       my_graph[peer_id] += int(block_size)
       
       if peer_id not in map_peerid_ipaddr:
-        map_peerid_ipaddr[peer_id] = {}
+        map_peerid_ipaddr[peer_id] = []
       
       if source_address not in map_peerid_ipaddr[peer_id]:
-        map_peerid_ipaddr[peer_id][source_address] = 0
+        map_peerid_ipaddr[peer_id].append(source_address)
         
       continue
       
-      
+    
     my_peer_id_re_match = my_peer_id_re.search(line)
     if my_peer_id_re_match:
       my_peer_id = my_peer_id_re_match.group(1)
@@ -78,7 +78,7 @@ def parse_file(logfile):
       print "Block finish didn't catch: %s" % line
       continue
       
-  return graph
+  return (graph, map_peerid_ipaddr)
   
   
 def output_dot(output_file, graph):
@@ -89,8 +89,9 @@ def output_dot(output_file, graph):
   
   for dest in graph:
     for source in graph[dest]:
-      output_f.write("\"%s\" -> \"%s\"[label=\"%s\",weight=\"%i\"];\n" %\
-      (source, dest, sizeof_fmt(graph[dest][source]), int(graph[dest][source]/1000)))
+      if source == "-LT1000-0WcCFeMUWhiS":
+        output_f.write("\"%s\" -> \"%s\"[label=\"%s\",weight=\"%i\"];\n" %\
+        (source, dest, sizeof_fmt(graph[dest][source]), int(graph[dest][source]/1000)))
   
   output_f.write("}\n")
   
@@ -104,8 +105,18 @@ def output_stats(graph):
     print ""
     
 
+
+def merge_dols(dol1, dol2):
+  result = dict(dol1, **dol2)
+  result.update((k, dol1[k] + dol2[k])
+                for k in set(dol1).intersection(dol2))
+  return result
+
+
 def add_options(parser):
   pass
+
+
 
 
 def main():
@@ -119,10 +130,20 @@ def main():
   
   graph = {}
   
-  pool = Pool(processes = 2)
+  pool = Pool(processes = 8)
   results = pool.map(parse_file, args)
   
-  print results
+  map_dict = {}
+  
+  #print results
+  for (graph_result, map_result) in results:
+      graph = dict(graph.items() + graph_result.items())
+      map_dict = merge_dols(map_dict, map_result)
+  
+
+  print map_dict
+  print "---------------------"
+  print graph
   
   #for file in args:
   #  parse_file(file, graph)
