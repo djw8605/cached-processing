@@ -19,7 +19,7 @@ def parse_file(logfile, graph):
     print "Logfile %s doesn't exist" % logfile
     return
     
-  print "Examing file %s" % logfile
+  print "Examining file %s" % logfile
     
   # Now, start parsing the file
   # Example:
@@ -55,15 +55,14 @@ def parse_file(logfile, graph):
     my_peer_id_re_match = my_peer_id_re.search(line)
     if my_peer_id_re_match:
       my_peer_id = my_peer_id_re_match.group(1)
+      if my_peer_id not in graph:
+        graph[my_peer_id] = {}
+      my_graph = graph[my_peer_id]
       
     block_finish_fallthrough_match = block_finish_fallthrough.search(line)
     if block_finish_fallthrough_match:
       print "Block finish didn't catch: %s" % line
       continue
-      
-  keys = my_graph.keys()
-  keys.sort()
-  print keys
     
   
 def output_dot(output_file, graph):
