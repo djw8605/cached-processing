@@ -3,6 +3,9 @@
 import optparse
 import os
 import re
+from multiprocessing import Pool
+
+map_peerid_ipaddr = {}
 
 # From: https://stackoverflow.com/questions/1094841/reusable-library-to-get-human-readable-version-of-file-size
 def sizeof_fmt(num, suffix='B'):
@@ -13,13 +16,15 @@ def sizeof_fmt(num, suffix='B'):
     return "%.1f%s%s" % (num, 'Yi', suffix)
 
 
-def parse_file(logfile, graph):
+def parse_file(logfile):
   
   if not os.path.exists(logfile):
     print "Logfile %s doesn't exist" % logfile
     return
     
   print "Examining file %s" % logfile
+  
+  graph = {}
     
   # Now, start parsing the file
   # Example:
@@ -50,7 +55,15 @@ def parse_file(logfile, graph):
       if peer_id not in my_graph:
         my_graph[peer_id] = 0
       my_graph[peer_id] += int(block_size)
+      
+      if peer_id not in map_peerid_ipaddr:
+        map_peerid_ipaddr[peer_id] = {}
+      
+      if source_address not in map_peerid_ipaddr[peer_id]:
+        map_peerid_ipaddr[peer_id][source_address] = 0
+        
       continue
+      
       
     my_peer_id_re_match = my_peer_id_re.search(line)
     if my_peer_id_re_match:
@@ -58,12 +71,15 @@ def parse_file(logfile, graph):
       if my_peer_id not in graph:
         graph[my_peer_id] = {}
       my_graph = graph[my_peer_id]
+      continue
       
     block_finish_fallthrough_match = block_finish_fallthrough.search(line)
     if block_finish_fallthrough_match:
       print "Block finish didn't catch: %s" % line
       continue
-    
+      
+  return graph
+  
   
 def output_dot(output_file, graph):
   
@@ -79,6 +95,14 @@ def output_dot(output_file, graph):
   output_f.write("}\n")
   
 
+def output_stats(graph):
+  
+  for peer_id in map_peerid_ipaddr:
+    print "%s: " % peer_id,
+    for ipaddr in map_peerid_ipaddr[peer_id]:
+      print "%s" % ipaddr, 
+    print ""
+    
 
 def add_options(parser):
   pass
@@ -95,8 +119,13 @@ def main():
   
   graph = {}
   
-  for file in args:
-    parse_file(file, graph)
+  pool = Pool(processes = 2)
+  results = pool.map(parse_file, args)
+  
+  print results
+  
+  #for file in args:
+  #  parse_file(file, graph)
 
   output_dot(output_file, graph)
   print graph
