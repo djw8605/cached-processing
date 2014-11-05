@@ -89,8 +89,7 @@ def output_dot(output_file, graph):
   
   for dest in graph:
     for source in graph[dest]:
-      if source == "-LT1000-0WcCFeMUWhiS":
-        output_f.write("\"%s\" -> \"%s\"[label=\"%s\",weight=\"%i\"];\n" %\
+      output_f.write("\"%s\" -> \"%s\"[label=\"%s\",weight=\"%i\"];\n" %\
         (source, dest, sizeof_fmt(graph[dest][source]), int(graph[dest][source]/1000)))
   
   output_f.write("}\n")
