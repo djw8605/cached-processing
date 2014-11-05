@@ -114,6 +114,10 @@ def merge_dols(dol1, dol2):
 
 
 def add_options(parser):
+  
+  parser.add_option("-p", "--procs", dest="processes", type="int",
+                    help="Number of processes to start", default=2)
+  
   pass
 
 
@@ -130,7 +134,7 @@ def main():
   
   graph = {}
   
-  pool = Pool(processes = 8)
+  pool = Pool(processes = options.processes)
   results = pool.map(parse_file, args)
   
   map_dict = {}
