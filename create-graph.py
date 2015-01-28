@@ -28,7 +28,7 @@ def parse_file(logfile):
   # Example:
   # Got block of size 16384 bytes from [::ffff:10.137.11.4]:6884, peer_id = -LT1000-ktC_fZfzZadv
   block_finish_re = re.compile(".*Got block of size (\d+) bytes from (.*), peer_id = (.*)$")
-  block_finish_fallthrough = re.compile(".*Got block of size (\d+) bytes from.*")
+  block_finish_fallthrough = re.compile(".*Got block of size.*")
   
   # DaemonCore: command socket at <10.138.14.1:55477?noUDP>
   dest_address = re.compile(".*DaemonCore: command socket at \<([\d\.]+)\:.*>")
