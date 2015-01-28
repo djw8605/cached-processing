@@ -78,7 +78,7 @@ def main():
 
 
     plt.scatter(x, y)
-    plt.axis([numpy.amin(x), 13000+1.42213e9, 0, numpy.amax(y)])
+    plt.axis([numpy.amin(x), numpy.amax(x), 0, numpy.amax(y)])
 
     plt.xlabel("Time")
     plt.ylabel("Download Time")
