@@ -58,18 +58,25 @@ def main():
 
     (options, args) = parser.parse_args()
 
-    output_file = args[0]
-    args.pop(0)
 
-    graph = {}
 
     pool = Pool(processes = options.processes)
-    results = pool.map(parse_file, args)
+    total_results = []
+
+    for arg in args:
+        import glob
+        files = glob.glob(arg)
+        print "Processing arg = " + arg
+        print files
+        results = pool.map(parse_file, files)
+        print results
+        total_results.append(results)
 
 
-    print results
 
-    n, bins, patches = plt.hist(results, 50, facecolor='green', alpha=0.75)
+    #print results
+
+    n, bins, patches = plt.hist(total_results, 50, alpha=0.75, stacked=True, label=['Direct', 'Bittorrent'])
     print bins
     print n
     l = plt.plot(bins)
@@ -78,6 +85,7 @@ def main():
     plt.xlabel("Download Duration")
     plt.ylabel("Number of instances")
     plt.title("Histogram of number of instances of download times")
+    plt.legend()
 
     plt.savefig("hist_of_downloadtimes.png")
 

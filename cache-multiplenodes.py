@@ -8,64 +8,11 @@ import datetime
 import matplotlib
 matplotlib.use('AGG')
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import numpy
 import time
 
-def parse_file(filename):
-
-    print "Examining %s" % filename
-    
-    # Fri Jan 23 16:40:18 CST 2015
-    start_re = re.compile(".*start time = (.*)$")
-    end_re = re.compile(".*end time = (.*)$")
-    # CacheState = 1;
-    cache_re = re.compile(".*CacheState = (\d)\;")
-    # HOSTNAME=c1016
-    node_re = re.compile(".*HOSTNAME=(.*)$")
-    # SLURM_JOBID=231412
-    slurm_re = re.compile(".*SLURM_JOBID=(.*)$")
-
-
-    found_initial = False
-    initial_cached = False
-
-    f = open(filename, 'r')
-    for line in f:
-        start_match = start_re.search(line)
-        if start_match:
-            start_time = start_match.group(1)
-            print "started at %s" % start_time
-        end_match = end_re.search(line)
-        if end_match:
-            end_time = end_match.group(1)
-            print "Ended at %s" % end_time
-            break
-        cache_match = cache_re.search(line)
-        if cache_match and not found_initial:
-            found_initial = True
-            if cache_match.group(1) != "1":
-                initial_cached = True
-        node_match = node_re.search(line)
-        if node_match:
-            hostname = node_match.group(1)
-        slurm_match = slurm_re.search(line)
-        if slurm_match:
-            slurm_jobid = int(slurm_match.group(1))
-
-    # Sat Jan 24 16:02:37 CST 2015
-    time_format = "%a %b %d %H:%M:%S %Z %Y"
-    start_fmt = datetime.datetime.strptime(start_time, time_format)
-    end_fmt = datetime.datetime.strptime(end_time, time_format)
-
-    difference = end_fmt - start_fmt
-    seconds = (difference.microseconds + (difference.seconds + difference.days * 24 * 3600) * 10**6) / 10**6
-    print "Total seconds = %i" % seconds
-
-    to_return = {"starttime": start_fmt, "endtime": end_fmt, "duration": seconds, "initialCached": initial_cached, "host": hostname, "slurm_jobid": slurm_jobid}
-
-    #return (time.mktime(start_fmt.timetuple()), seconds)
-    return to_return
-    
+from parse_file import parse_file
 
 
 
@@ -96,45 +43,75 @@ def main():
     not_cached = []
 
     sorted_results = sorted(results, key=lambda cache: cache["host"])
-    print sorted_results
 
-    host = sorted_results[0]["host"]
     collection = []
     i = 0
-    plt.axes()
 
-    while host == sorted_results[0]["host"]:
-        #rectangle = plt.Rectangle((time.mktime(cache["starttime"].timetuple()), i*2), cache["duration"], 1.5)
-        #plt.gca().add_patch(rectangle)
-        collection.append(sorted_results[i])
-        i+= 1
-        host = sorted_results[i]["host"]
-
-    sorted_timeline = sorted(collection, key=lambda cache: cache["starttime"])
-
-    print sorted_timeline
-    max_time = 0
-    import math
     counter = 0
-    jobidmatch = {}
+    while len(sorted_results) > 0:
+        collection.append([])
+        host = sorted_results[0]["host"]
 
-    for i in range(len(sorted_timeline)):
-        cache = sorted_results[i]
-        if cache["slurm_jobid"] not in jobidmatch:
-            jobidmatch[cache["slurm_jobid"]] = counter
-            counter+=2
+        while len(sorted_results) > 0 and host == sorted_results[0]["host"]:
+            #rectangle = plt.Rectangle((time.mktime(cache["starttime"].timetuple()), i*2), cache["duration"], 1.5)
+            #plt.gca().add_patch(rectangle)
+            collection[counter].append(sorted_results[0])
+            sorted_results.pop(0)
+
+        counter += 1 
+
+    for i in range(len(collection)):
+        host = collection[i]
+        collection[i] = sorted(host, key=lambda cache: cache["starttime"])
+
+    import math
+    #unique_identifier_key = "_CONDOR_SLOT"
+    unique_identifier_key = "slurm_jobid"
+
+    for sorted_timeline in collection:
+        plt.clf()
+        plt.axes()
+        counter = 0
+        jobidmatch = {}
+        max_time = 0
+        host = sorted_timeline[0]["host"]
+    
         
-        rectangle = plt.Rectangle((time.mktime(cache["starttime"].timetuple()), jobidmatch[cache["slurm_jobid"]]), cache["duration"], 1.5)
-        max_time = max(max_time, time.mktime(cache["endtime"].timetuple()))
-        plt.gca().add_patch(rectangle)
-        print "x = %i, y = %i, duration = %i" % (time.mktime(cache["starttime"].timetuple()), i*2, cache["duration"])
-
-    #plt.axis('scaled')
-    plt.xlim([time.mktime(sorted_timeline[0]["starttime"].timetuple()), max_time])
-    plt.ylim([0, len(jobidmatch.keys())])
-
-    plt.savefig("timeline.png")
-
+        for i in range(len(sorted_timeline)):
+            cache = sorted_timeline[i]
+            if cache[unique_identifier_key] not in jobidmatch:
+                jobidmatch[cache[unique_identifier_key]] = counter
+                counter+=2
+    
+            if cache["initialCached"]:
+                color = 'green'
+                label = "Cached"
+            else:
+                color = 'red'
+                label = "UnCached"
+            
+            rectangle = plt.Rectangle((time.mktime(cache["starttime"].timetuple()), jobidmatch[cache[unique_identifier_key]]), cache["duration"], 1.5, color = color, label = label)
+            max_time = max(max_time, time.mktime(cache["endtime"].timetuple()))
+            plt.gca().add_patch(rectangle, )
+            print "x = %i, y = %i, duration = %i" % (time.mktime(cache["starttime"].timetuple()), i*2, cache["duration"])
+    
+        print jobidmatch
+        #plt.axis('scaled')
+        plt.xlim([time.mktime(sorted_timeline[0]["starttime"].timetuple()), max_time])
+        plt.ylim([0, len(jobidmatch.keys())*2.4])
+    
+        plt.xlabel("Workflow Time")
+        plt.ylabel("Slot on machine")
+        plt.title("Duration of downloads on a single host: %s" % host)
+    
+        red_patch =  mpatches.Patch(color='red', label='UnCached')
+        green_patch = mpatches.Patch(color='green', label='Cached')
+        plt.legend((red_patch, green_patch), ('UnCached', 'Cached'))
+        #plt.legend()
+    
+    
+        plt.savefig("timeline_%s.png" % sorted_timeline[0]["host"])
+    
 
 
 
