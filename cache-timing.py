@@ -50,19 +50,27 @@ def main():
 
     already_cached = []
     not_cached = []
+    arrays = {}
+
 
     for cache_info in results:
-        if cache_info["initialCached"]:
-            already_cached.append(cache_info["duration"])
-        else:
-            not_cached.append(cache_info["duration"])
+        if cache_info["mode"] not in arrays:
+            arrays[cache_info["mode"]] = []
 
-    print "Cached: mean = %lf, median = %lf" % (numpy.mean(already_cached), numpy.median(already_cached))
-    print "Not Cached: mean = %lf, median = %lf" % (numpy.mean(not_cached), numpy.median(not_cached))
+        arrays[cache_info["mode"]].append(cache_info["duration"])
+
+    
+    for mode in arrays.keys():
+        print mode + ": Number = %i" % (len(arrays[mode]))
+        print mode + ": mean = %lf, median = %lf" % ( numpy.mean(arrays[mode]), numpy.median(arrays[mode]))
+        print mode + ": Speed = %s" % (sizeof_fmt(filesize / numpy.mean(arrays[mode]), suffix="B/s"))
+
+    #print "Cached: mean = %lf, median = %lf" % (numpy.mean(already_cached), numpy.median(already_cached))
+    #print "Not Cached: mean = %lf, median = %lf" % (numpy.mean(not_cached), numpy.median(not_cached))
 
     
 
-    print "Not Cached Speed: mean = %s" % (sizeof_fmt(filesize / numpy.mean(not_cached), suffix="B/s"))
+    #print "Not Cached Speed: mean = %s" % (sizeof_fmt(filesize / numpy.mean(not_cached), suffix="B/s"))
 
     
 
