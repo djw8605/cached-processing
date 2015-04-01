@@ -9,6 +9,7 @@ import matplotlib
 matplotlib.use('AGG')
 import matplotlib.pyplot as plt
 import numpy
+import scipy.stats
 import time
 
 from parse_file import parse_file
@@ -59,11 +60,17 @@ def main():
 
         arrays[cache_info["mode"]].append(cache_info["duration"])
 
+    sum_stagein = 0
+
     
     for mode in arrays.keys():
         print mode + ": Number = %i" % (len(arrays[mode]))
-        print mode + ": mean = %lf, median = %lf" % ( numpy.mean(arrays[mode]), numpy.median(arrays[mode]))
+        print mode + ": mean = %lf, median = %lf, std. dev = %lf, std. err = %lf" % ( numpy.mean(arrays[mode]), numpy.median(arrays[mode]), numpy.std(arrays[mode]), scipy.stats.sem(arrays[mode]))
+        print mode + ": Total stagein = %i" % (numpy.sum(arrays[mode]))
+        sum_stagein += numpy.sum(arrays[mode])
         print mode + ": Speed = %s" % (sizeof_fmt(filesize / numpy.mean(arrays[mode]), suffix="B/s"))
+
+    print "Total stagein = %i" % sum_stagein
 
     #print "Cached: mean = %lf, median = %lf" % (numpy.mean(already_cached), numpy.median(already_cached))
     #print "Not Cached: mean = %lf, median = %lf" % (numpy.mean(not_cached), numpy.median(not_cached))
