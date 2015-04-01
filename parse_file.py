@@ -33,12 +33,12 @@ def parse_file(filename):
         start_match = start_re.search(line)
         if start_match:
             start_time = start_match.group(1)
-            print "started at %s" % start_time
+            #print "started at %s" % start_time
             continue
         end_match = end_re.search(line)
         if end_match:
             end_time = end_match.group(1)
-            print "Ended at %s" % end_time
+            #print "Ended at %s" % end_time
             continue
         cache_match = cache_re.search(line)
         if cache_match and not found_initial:
@@ -82,8 +82,8 @@ def parse_file(filename):
     to_return = {"starttime": start_fmt, "endtime": end_fmt, "duration": seconds, "initialCached": initial_cached, "host": hostname, "slurm_jobid": slurm_jobid, 
                  "_CONDOR_SLOT": slot_id}
 
-    print "Origin = " + origin
-    print "Parent = " + parent
+    #print "Origin = " + origin
+    #print "Parent = " + parent
     if initial_cached:
         to_return["mode"] = "cached"
     elif origin == parent:
@@ -91,7 +91,7 @@ def parse_file(filename):
     else:
         to_return["mode"] = "child"
 
-    print "Mode = " + to_return["mode"]
+    #print "Mode = " + to_return["mode"]
 
     #return (time.mktime(start_fmt.timetuple()), seconds)
     return to_return
