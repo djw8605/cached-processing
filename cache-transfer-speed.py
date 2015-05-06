@@ -61,7 +61,7 @@ def main():
         print "Start time = %i, end time = %i" % (start_time, end_time)
 
         # Calculate the transfer speed
-        transfer_speed = float(filesize) / float(end_time - start_time)
+        transfer_speed = (float(filesize) / float(end_time - start_time)) / (1024**2)
         print "Transfer Time = %lf, transfer speed = %lf" % (float(end_time - start_time), transfer_speed)
 
         # Add the start time
@@ -91,9 +91,20 @@ def main():
 
 
     print timeline
-    print zip(*timeline)
-    
-    plt.plot(*zip(*timeline))
+    #print zip(*timeline)
+
+    split = zip(*timeline)
+    x = split[0]
+    y = split[1]
+    print x
+    print y
+    plt.plot(x, y, label="Effective Bandwidth")
+    plt.plot([numpy.amin(x), numpy.amax(x)], [1024/8, 1024/8], label="Origin's Available Bandwidth")
+    plt.axis([numpy.amin(x), numpy.amax(x), 0, 2000])
+    plt.xlabel("Time")
+    plt.legend()
+    plt.ylabel("MB/s")
+    plt.title("Effective Bandwidth for Bittorrent Transfers")
     plt.savefig("transfer_speed.png")
 
 
