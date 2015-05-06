@@ -53,7 +53,7 @@ def main():
     plt.axis([0, numpy.amax(bins), 0, numpy.amax(n)])
     plt.xlabel("Download Duration (s)")
     plt.ylabel("Number of instances")
-    plt.title("Histogram of number of instances of download times")
+    plt.title("Histogram of download type by download times")
     plt.legend()
 
     plt.savefig("modes_vs_downloadtimes.png")
