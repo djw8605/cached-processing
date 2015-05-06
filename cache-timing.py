@@ -53,6 +53,7 @@ def main():
     not_cached = []
     arrays = {}
 
+    print "Number of jobs = %i" % len(results)
 
     for cache_info in results:
         if cache_info["mode"] not in arrays:
