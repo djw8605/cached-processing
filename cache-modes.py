@@ -45,15 +45,17 @@ def main():
 
     #print results
 
-    n, bins, patches = plt.hist(total_results, 25, alpha=0.75, stacked=True, label=['Cached', 'Parent', 'Children'])
+    #n, bins, patches = plt.hist(total_results, 25, alpha=0.75, stacked=True, label=['Cached', 'Parent', 'Children'], color=['blue', 'white', 'black'])
+    n, bins, patches = plt.hist(total_results[1:], 25, alpha=0.75, stacked=True, label=['Parent', 'Children'], color=['white', 'black'])
     print bins
     print n
     l = plt.plot(bins)
 
-    plt.axis([0, numpy.amax(bins), 0, numpy.amax(n)])
-    plt.xlabel("Download Duration (s)")
-    plt.ylabel("Number of instances")
-    plt.title("Histogram of download type by download times")
+    #plt.axis([0, numpy.amax(bins), 0, numpy.amax(n)])
+    plt.axis([0, numpy.amax(bins), 0, 25])
+    plt.xlabel("Download Duration (sec.)")
+    plt.ylabel("Number of Instances")
+    plt.title("Histogram of Download Type by Download Times")
     plt.legend()
 
     plt.savefig("modes_vs_downloadtimes.png")

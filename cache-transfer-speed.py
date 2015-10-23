@@ -52,16 +52,23 @@ def main():
 
     pool = Pool(processes = options.processes)
     results = pool.map(parse_file, args)
+    results = filter(None, results)
 
     timings = {}
 
     for result in results:
+        if result['mode'] == "cached":
+            continue
         start_time = unix_time(result['starttime'])
         end_time = unix_time(result['endtime'])
         print "Start time = %i, end time = %i" % (start_time, end_time)
 
+
+        if end_time - start_time < 100:
+            continue
+
         # Calculate the transfer speed
-        transfer_speed = (float(filesize) / float(end_time - start_time)) / (1024**2)
+        transfer_speed = ((float(filesize) / float(end_time - start_time)) / (1024**3))*8
         print "Transfer Time = %lf, transfer speed = %lf" % (float(end_time - start_time), transfer_speed)
 
         # Add the start time
@@ -97,15 +104,20 @@ def main():
     x = split[0]
     y = split[1]
     print x
+    x = numpy.array(x) - x[0]
+    print x
     print y
     plt.plot(x, y, label="Effective Bandwidth")
-    plt.plot([numpy.amin(x), numpy.amax(x)], [1024/8, 1024/8], label="Origin's Available Bandwidth")
-    plt.axis([numpy.amin(x), numpy.amax(x), 0, 2000])
+    plt.plot([numpy.amin(x), numpy.amax(x)], [1.0, 1.0], label="Origin's Available Bandwidth")
+    plt.axis([numpy.amin(x), numpy.amax(x), 0, numpy.amax(y)])
     plt.xlabel("Time")
     plt.legend()
-    plt.ylabel("MB/s")
-    plt.title("Effective Bandwidth for Bittorrent Transfers")
+    plt.ylabel("Gbit/s")
+    plt.title("Effective Bandwidth for BitTorrent Transfers")
     plt.savefig("transfer_speed.png")
+
+    for i in range(len(x)):
+        print "%lf, %lf" % ( x[i], y[i] )
 
 
     #plt.scatter(x, y)

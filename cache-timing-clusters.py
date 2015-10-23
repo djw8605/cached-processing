@@ -70,7 +70,7 @@ def main():
         cur_mode.append(cache_info["duration"])
 
     sum_stagein = 0
-
+    print "Total Clusters: %i" % len(arrays.keys())
     for cluster in arrays.keys():
         print "For %s" % cluster
         for mode in arrays[cluster].keys():

@@ -47,7 +47,7 @@ def main():
 
     pool = Pool(processes = options.processes)
     results = pool.map(parse_file, args)
-
+    results = filter(None, results)
 
     already_cached = []
     not_cached = []
@@ -58,15 +58,15 @@ def main():
     for cache_info in results:
         if cache_info["mode"] not in arrays:
             arrays[cache_info["mode"]] = []
-
-        arrays[cache_info["mode"]].append(cache_info["duration"])
+        if cache_info["duration"] > 10:
+            arrays[cache_info["mode"]].append(cache_info["duration"])
 
     sum_stagein = 0
 
     
     for mode in arrays.keys():
         print mode + ": Number = %i" % (len(arrays[mode]))
-        print mode + ": mean = %lf, median = %lf, std. dev = %lf, std. err = %lf" % ( numpy.mean(arrays[mode]), numpy.median(arrays[mode]), numpy.std(arrays[mode]), scipy.stats.sem(arrays[mode]))
+        print mode + ": mean = %lf, median = %lf, std. dev = %lf, std. err = %lf, max = %lf, min = %lf" % ( numpy.mean(arrays[mode]), numpy.median(arrays[mode]), numpy.std(arrays[mode]), scipy.stats.sem(arrays[mode]), numpy.max(arrays[mode]), numpy.min(arrays[mode]))
         print mode + ": Total stagein = %i" % (numpy.sum(arrays[mode]))
         sum_stagein += numpy.sum(arrays[mode])
         print mode + ": Speed = %s" % (sizeof_fmt(filesize / numpy.mean(arrays[mode]), suffix="B/s"))

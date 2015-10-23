@@ -14,6 +14,8 @@ def parse_tz(time):
         return pytz.timezone("America/Chicago")
     elif "PDT" in time:
         return pytz.timezone("America/Los_Angeles")
+    elif "BRT" in time:
+        return pytz.timezone("America/Sao_Paulo")
     else:
         print "Unknown TZ: %s" % time
 
@@ -23,6 +25,11 @@ def parse_tz(time):
 def parse_file(filename):
 
     print "Examining %s" % filename
+
+    import os
+    if os.stat(filename).st_size == 0:
+        print "Empty file: %s" % filename
+        return None
 
     # Fri Jan 23 16:40:18 CST 2015
     start_re = re.compile(".*start time = (.*)$")
@@ -49,6 +56,9 @@ def parse_file(filename):
     found_initial = False
     initial_cached = False
     slurm_jobid=0
+    cluster = None
+    origin = None
+    parent = None
 
     f = open(filename, 'r')
     for line in f:
@@ -94,49 +104,54 @@ def parse_file(filename):
         if cluster_match:
             cluster = cluster_match.group(1)
         #print line
-
-    # Sat Jan 24 16:02:37 CST 2015
-    time_format = "%a %b %d %H:%M:%S %Z %Y"
-    #print start_time
-    #start_fmt = dateutil.parser.parse(start_time, tzinfos=tz_parse)
-    start_fmt = dateutil.parser.parse(start_time, ignoretz=True)
-    print "string = %s, datetime = %s" % (start_time, str(start_fmt))
-    #print start_fmt
-    timezone = parse_tz(start_time)
-    start_fmt = timezone.localize(start_fmt)
-
-    print start_fmt
-    #end_fmt = dateutil.parser.parse(end_time, tzinfos=tz_parse)
-    end_fmt = dateutil.parser.parse(end_time, ignoretz=True)
-    end_fmt = timezone.localize(end_fmt)
-    #if len(start_time.split()[2]) != 2:
-    #    start_time = start_time.replace(" %s" % start_time.split()[2], "0%s" % start_time.split()[2], 1)
-    #    print "New start_time = %s" % start_time
+    
+    try:
+        # Sat Jan 24 16:02:37 CST 2015
+        time_format = "%a %b %d %H:%M:%S %Z %Y"
+        #print start_time
+        #start_fmt = dateutil.parser.parse(start_time, tzinfos=tz_parse)
+        start_fmt = dateutil.parser.parse(start_time, ignoretz=True)
+        #print "string = %s, datetime = %s" % (start_time, str(start_fmt))
+        #print start_fmt
+        timezone = parse_tz(start_time)
+        start_fmt = timezone.localize(start_fmt)
+    
+        #print start_fmt
+        #end_fmt = dateutil.parser.parse(end_time, tzinfos=tz_parse)
+        end_fmt = dateutil.parser.parse(end_time, ignoretz=True)
+        end_fmt = timezone.localize(end_fmt)
+        #if len(start_time.split()[2]) != 2:
+        #    start_time = start_time.replace(" %s" % start_time.split()[2], "0%s" % start_time.split()[2], 1)
+        #    print "New start_time = %s" % start_time
+            
+        #start_time = start_time.replace("EDT", "CDT")
+        #start_fmt = datetime.datetime.strptime(start_time, time_format)
+        #end_fmt = datetime.datetime.strptime(end_time, time_format)
+    
+        difference = end_fmt - start_fmt
+        seconds = (difference.microseconds + (difference.seconds + difference.days * 24 * 3600) * 10**6) / 10**6
+        #print "Total seconds = %i" % seconds
+    
+        to_return = {"starttime": start_fmt, "endtime": end_fmt, "duration": seconds, "initialCached": initial_cached, "host": hostname, "slurm_jobid": slurm_jobid, 
+                "_CONDOR_SLOT": slot_id, "cluster": cluster}
+    
+        #print "Origin = " + origin
+        #print "Parent = " + parent
+        if initial_cached:
+            to_return["mode"] = "cached"
+        elif origin == parent:
+            to_return["mode"] = "parent"
+        else:
+            to_return["mode"] = "child"
+    
+        #print "Mode = " + to_return["mode"]
+    
+        #return (time.mktime(start_fmt.timetuple()), seconds)
+        return to_return
+    except Exception, e:
+        print "Error while parsing file %s: %s" % (filename, str(e))
         
-    #start_time = start_time.replace("EDT", "CDT")
-    #start_fmt = datetime.datetime.strptime(start_time, time_format)
-    #end_fmt = datetime.datetime.strptime(end_time, time_format)
 
-    difference = end_fmt - start_fmt
-    seconds = (difference.microseconds + (difference.seconds + difference.days * 24 * 3600) * 10**6) / 10**6
-    #print "Total seconds = %i" % seconds
-
-    to_return = {"starttime": start_fmt, "endtime": end_fmt, "duration": seconds, "initialCached": initial_cached, "host": hostname, "slurm_jobid": slurm_jobid, 
-            "_CONDOR_SLOT": slot_id, "cluster": cluster}
-
-    #print "Origin = " + origin
-    #print "Parent = " + parent
-    if initial_cached:
-        to_return["mode"] = "cached"
-    elif origin == parent:
-        to_return["mode"] = "parent"
-    else:
-        to_return["mode"] = "child"
-
-    #print "Mode = " + to_return["mode"]
-
-    #return (time.mktime(start_fmt.timetuple()), seconds)
-    return to_return
 
 
 
